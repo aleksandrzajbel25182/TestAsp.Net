@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34525.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{673049A8-AB5D-4391-BD80-915FAD57AC7F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.Api", "Test\Web.Api.csproj", "{673049A8-AB5D-4391-BD80-915FAD57AC7F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductDB", "ProductDB\ProductDB.csproj", "{9E28FF80-9C67-4457-83FE-AAFEB8438832}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProductDB", "ProductDB\ProductDB.csproj", "{9E28FF80-9C67-4457-83FE-AAFEB8438832}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientTest.Wpf", "ClientTest.Wpf\ClientTest.Wpf.csproj", "{7B15A538-3E2D-4183-818B-07889D904037}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClientTest.Wpf", "ClientTest.Wpf\ClientTest.Wpf.csproj", "{7B15A538-3E2D-4183-818B-07889D904037}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9E28FF80-9C67-4457-83FE-AAFEB8438832} = {9E28FF80-9C67-4457-83FE-AAFEB8438832}
 	EndProjectSection

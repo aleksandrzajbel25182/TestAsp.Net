@@ -1,183 +1,157 @@
 ﻿using ClientTest.Wpf.Commands;
-using Newtonsoft.Json;
+using ClientTest.Wpf.Service;
 using ProductDB.Entitys;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
 namespace ClientTest.Wpf.ViewModel
 {
-    class MainViewModel : ViewModel
+    class MainViewModel : ViewModelBase
     {
-        HttpClient client = new HttpClient();
-        private ObservableCollection<ProductEntitys> _product;
+        private readonly IPhoneApiService _phoneApiService;
+        private readonly HttpClient _httpClient;
 
-        public ObservableCollection<ProductEntitys> Product
+        private ObservableCollection<Phone> _phones;
+        public ObservableCollection<Phone> Phones
         {
-            get { return _product; }
+            get { return _phones; }
             set
             {
-                _product = value;
-                OnPropertyChanged("Product");
+                _phones = value;
+                OnPropertyChanged("Phones");
             }
         }
 
-        private ProductEntitys _selectedProduct;
-
-        public ProductEntitys SelectedProduct
+        private Phone? _selectedPhone;
+        public Phone? SelectedPhone
         {
-            get { return _selectedProduct; }
+            get { return _selectedPhone; }
             set
             {
-                _selectedProduct = value;
-                OnPropertyChanged("SelectedProduct");
+                _selectedPhone = value;
+                OnPropertyChanged(nameof(SelectedPhone));
+
+                if (_selectedPhone != null)
+                {
+                    Brand = _selectedPhone.Brand;
+                    Model = _selectedPhone.Model;
+                    Price = _selectedPhone.Price;
+                }
             }
         }
 
-        private string _title;
-
-        public string Title
+        private string brand;
+        public string Brand
         {
-            get { return _title; }
-            set { _title = value; OnPropertyChanged("Title"); }
-        }
-        private string _description;
-
-        public string Description
-        {
-            get { return _description; }
-            set { _description = value; OnPropertyChanged("Description"); }
+            get { return brand; }
+            set
+            {
+                brand = value;
+                OnPropertyChanged(nameof(Brand));
+            }
         }
 
-        private decimal? _price;
-        public decimal? Price
+        private string model;
+        public string Model
         {
-            get { return _price; }
-            set { _price = value; OnPropertyChanged("Price"); }
+            get { return model; }
+            set
+            {
+                model = value;
+                OnPropertyChanged(nameof(Model));
+            }
         }
 
+        private decimal price;
+        public decimal Price
+        {
+            get { return price; }
+            set
+            {
+                price = value;
+                OnPropertyChanged(nameof(Price));
+            }
+        }
 
+        public ICommand LoadDataCommand { get; private set; }
+        public ICommand AddPhoneCommand { get; private set; }
+        public ICommand SavePhoneCommand { get; private set; }
+        public ICommand DeletePhoneCommand { get; private set; }
 
+    
         public MainViewModel()
         {
+            _httpClient = new HttpClient();
+            _phoneApiService = new PhoneApiService(_httpClient);
 
-            client.BaseAddress = new Uri("https://localhost:44325/api/");
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(
-                new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")
-                );
-            this.GetProducts();
+            LoadDataCommand = new RelayCommand(async () => await LoadDataAsync());
+            AddPhoneCommand = new RelayCommand(async () => await AddPhone());
+            SavePhoneCommand = new RelayCommand(async () => await SavePhone());
+            DeletePhoneCommand = new RelayCommand(async () => await DeletePhone());
         }
 
-        private async void GetProducts()
+        private async Task LoadDataAsync()
         {
-            var responce = await client.GetStringAsync("product");
-            var product = JsonConvert.DeserializeObject<IEnumerable<ProductEntitys>>(responce);
-            Product = new ObservableCollection<ProductEntitys>(product);
+            Phones = await _phoneApiService.GetPhonesAsync();
         }
 
-        private ICommand _deleteCommand;
-        public ICommand DeleteCommand
-        {
-            get
+        private async Task AddPhone()
+        {           
+            Phone newPhone = new Phone { Brand = Brand, Model = Model, Price = Price };
+            var response = await _phoneApiService.AddPhoneAsync(newPhone);
+                       
+            if (response)
             {
-                if (_deleteCommand == null)
-                {
-                    _deleteCommand = new RelayCommand(param => DeleteProducts(SelectedProduct.Id));
-                }
-                return _deleteCommand;
+                MessageBox.Show("Phone add successfully");
+                Phones.Add(newPhone);
+            }
+            else
+            {
+                MessageBox.Show("Failed to add phone");
             }
         }
 
-        private ICommand _addCommand;
-        public ICommand AddCommand
+        private async Task SavePhone()
         {
-            get
+            if (SelectedPhone != null)
             {
-                if (_addCommand == null)
+                var response = await _phoneApiService.UpdatePhoneAsync(SelectedPhone);
+
+                if (response)
                 {
-                    _addCommand = new RelayCommand(param => AddProducts(new ProductEntitys
-                    {
-                        Title = Title,
-                        Price= (decimal)Price,
-                        Description = Description
-                    })) ;
+                    MessageBox.Show("Phone updated successfully");
                 }
-                return _addCommand;
+                else
+                {
+                    MessageBox.Show("Failed to update phone");
+                }
+            }
+            else if (string.IsNullOrEmpty(SelectedPhone.Brand) || string.IsNullOrEmpty(SelectedPhone.Model) || SelectedPhone.Price == 0)
+            {
+                MessageBox.Show("Please fill in Brand, Model, and Price fields");
+                return;
             }
         }
 
-        private ICommand _editCommand;
-        public ICommand EditCommand
+        private async Task DeletePhone()
         {
-            get
+            if (SelectedPhone != null)
             {
-                if (_editCommand == null)
+                var response = await _phoneApiService.DeletePhoneAsync(SelectedPhone.Id);
+
+                if (response)
                 {
-                    _editCommand = new RelayCommand(param => UpdateProducts(SelectedProduct));
+                    MessageBox.Show("Phone deleted successfully");
+                    Phones.Remove(SelectedPhone);
+                    SelectedPhone = null;
                 }
-                return _editCommand;
+                else
+                {
+                    MessageBox.Show("Failed to delete phone");
+                }
             }
         }
-
-        private ICommand _saveCommand;
-        public ICommand SaveCommand
-        {
-            get
-            {
-                if (_saveCommand == null)
-                {
-                    _saveCommand = new RelayCommand(param => SaveProducts(new ProductEntitys
-                    {
-                        Id = SelectedProduct.Id,
-                        Title = Title,
-                        Price = (decimal)Price,
-                        Description = Description
-                    }));
-                }
-                return _saveCommand;
-            }
-        }
-
-
-
-
-        private async void AddProducts(ProductEntitys product)
-        {
-            await client.PostAsJsonAsync("product", product);
-            this.GetProducts();
-        }
-       
-        private async void SaveProducts(ProductEntitys product)
-        {   
-                            await client.PutAsJsonAsync("product", product);
-                Title = string.Empty;
-                Description = string.Empty;
-                Price = null;
-                this.GetProducts();
-                      
-
-        }
-
-
-        private async void UpdateProducts(ProductEntitys product)
-        {
-            Title = SelectedProduct.Title;
-            Price = SelectedProduct.Price;
-            Description = SelectedProduct.Description;
-        }
-
-        private async void DeleteProducts(int productId)
-        {
-            await client.DeleteAsync("product/" + productId); this.GetProducts();
-        }
-
     }
 }
